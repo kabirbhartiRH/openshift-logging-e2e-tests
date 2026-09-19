@@ -1216,7 +1216,10 @@ exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.lo
 				_, err := oc.AsAdmin().WithoutNamespace().Run("config").Args("use-context", context).Output()
 				o.Expect(err).NotTo(o.HaveOccurred())
 			}()
-			_ = oc.AsAdmin().WithoutNamespace().Run("login").Args(server, "-u", getRandomString(), "-p", getRandomString()).Execute()
+			// The login is expected to fail (random credentials); it only needs to reach the oauth-server so that
+			// it audits the /oauth/authorize request. Skip TLS verification, otherwise clusters whose API server
+			// certificate is not signed by a trusted CA (e.g. CI cluster pools) reject the request before that.
+			_ = oc.AsAdmin().WithoutNamespace().Run("login").Args(server, "-u", getRandomString(), "-p", getRandomString(), "--insecure-skip-tls-verify=true").Execute()
 
 			compat_otp.By("checking app, infra and audit logs in loki")
 			defer removeClusterRoleFromServiceAccount(oc, oc.Namespace(), "default", "cluster-admin")
