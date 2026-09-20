@@ -817,6 +817,14 @@ type Index struct {
 	Prefix string `yaml:"prefix"`
 }
 
+type LokiStorageConfig struct {
+	StorageConfig StorageConfig `yaml:"storage_config"`
+}
+
+type StorageConfig struct {
+	UseThanoObjstore bool `yaml:"use_thanos_objstore"`
+}
+
 /*
 Loki limits config
 */

@@ -2,7 +2,6 @@
 package logging
 
 import (
-	"github.com/openshift/openshift-logging-e2e-tests/test/e2e/testdata"
 	"context"
 	"fmt"
 	"os"
@@ -10,10 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift/openshift-logging-e2e-tests/test/e2e/testdata"
+
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
-	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 	exutil "github.com/openshift/origin/test/extended/util"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
@@ -22,7 +23,7 @@ import (
 var _ = g.Describe("[sig-openshift-logging] LOGGING Logging", func() {
 	defer g.GinkgoRecover()
 	var (
-		oc = exutil.NewCLIWithoutNamespace("log-accept")
+		oc             = exutil.NewCLIWithoutNamespace("log-accept")
 		loggingBaseDir string
 		CLO, LO        SubscriptionObjects
 	)
@@ -125,6 +126,12 @@ var _ = g.Describe("[sig-openshift-logging] LOGGING Logging", func() {
 		ls.createSecretFromGateway(oc, clf.secretName, clf.namespace, "")
 		defer clf.delete(oc)
 		clf.create(oc, "LOKISTACK_NAME="+ls.name, "LOKISTACK_NAMESPACE="+ls.namespace)
+
+		compat_otp.By("Validate thanos objstore client is enabled")
+		thanosObjstoreClientIsEnabled, err := ls.validateThanosObjStoreClientIsEnabled(oc)
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(thanosObjstoreClientIsEnabled).Should(o.BeTrue())
+		e2e.Logf("Thanos objstore client is enabled")
 
 		//check logs in loki stack
 		g.By("check logs in loki")
@@ -485,6 +492,12 @@ retry_max_duration_secs = 20`,
 		ls.createSecretFromGateway(oc, clf.secretName, clf.namespace, "")
 		defer clf.delete(oc)
 		clf.create(oc, "LOKISTACK_NAME="+ls.name, "LOKISTACK_NAMESPACE="+ls.namespace)
+
+		compat_otp.By("Validate thanos objstore client is enabled")
+		thanosObjstoreClientIsEnabled, err := ls.validateThanosObjStoreClientIsEnabled(oc)
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(thanosObjstoreClientIsEnabled).Should(o.BeTrue())
+		e2e.Logf("Thanos objstore client is enabled")
 
 		//check logs in loki stack
 		compat_otp.By("Check logs in LokiStack")
