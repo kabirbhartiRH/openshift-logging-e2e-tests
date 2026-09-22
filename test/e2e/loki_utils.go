@@ -2006,3 +2006,18 @@ func validatePolicyTypes(actualTypes, expectedTypes []string) bool {
 	}
 	return true
 }
+
+// validateThanosObjStoreClientIsEnabled checks whether the Loki config for this LokiStack
+// deployment has storage_config.use_thanos_objstore set to true.
+func (l lokiStack) validateThanosObjStoreClientIsEnabled(oc *exutil.CLI) (bool, error) {
+	cmName := l.name + "-config"
+	raw, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("configmap", "-n", l.namespace, cmName, "-o", "jsonpath={.data.config\\.yaml}").Output()
+	if err != nil {
+		return false, fmt.Errorf("error getting configmap %s: %v", cmName, err)
+	}
+	var cfg LokiStorageConfig
+	if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {
+		return false, fmt.Errorf("error unmarshalling Loki config: %v", err)
+	}
+	return cfg.StorageConfig.UseThanoObjstore, nil
+}
