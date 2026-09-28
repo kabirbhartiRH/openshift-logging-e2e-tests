@@ -56,7 +56,7 @@ var _ = g.Describe("[sig-openshift-logging] LOGGING Logging", func() {
 
 	// author qitang@redhat.com
 	// port=no - 64.8% pass rate (253 runs last 60 days)
-	g.It("Author:qitang-Critical-74397-[InterOps] Forward logs to LokiStack.[Slow][Serial][CLO][LokiOperator]", func() {
+	g.It("Author:qitang-Critical-74397-[InterOps] Forward logs to LokiStack.[Slow][Serial][PreMerge][CLO][LokiOperator]", func() {
 		g.By("deploy LO")
 		LO.SubscribeOperator(oc)
 		s := getStorageType(oc)
@@ -199,7 +199,7 @@ var _ = g.Describe("[sig-openshift-logging] LOGGING Logging", func() {
 	})
 
 	// port=no - 69.1% pass rate (687 runs last 60 days)
-	g.It("Author:qitang-ConnectedOnly-Critical-74926-[InterOps] Forward logs to Cloudwatch.[CLO]", func() {
+	g.It("Author:qitang-ConnectedOnly-Critical-74926-[InterOps] Forward logs to Cloudwatch.[PreMerge][CLO]", func() {
 		clfNS := oc.Namespace()
 		cw := cloudwatchSpec{
 			collectorSAName: "cloudwatch-" + getRandomString(),
