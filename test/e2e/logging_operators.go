@@ -996,8 +996,8 @@ var _ = g.Describe("[sig-openshift-logging] Logging NonPreRelease must-gather", 
 		o.Expect(len(files) > 0).Should(o.BeTrue())
 		for _, expectFile := range []string{
 			"cluster-scoped-resources/observability.openshift.io/uiplugins/logging.yaml",
-			"cluster-logging/namespaces/" + clfES.namespace + "/" + "configmap_" + clfES.name + "-config_vector.toml",
-			"cluster-logging/namespaces/" + clf.namespace + "/" + "configmap_" + clf.name + "-config_vector.toml",
+			"namespaces/" + clfES.namespace + "/core/configmaps/" + clfES.name + "-config.yaml",
+			"namespaces/" + clf.namespace + "/core/configmaps/" + clf.name + "-config.yaml",
 			"namespaces/openshift-logging/logging.openshift.io/logfilemetricexporters/instance.yaml",
 			"namespaces/" + ls.namespace + "/loki.grafana.com/lokistacks/" + ls.name + ".yaml",
 			"namespaces/" + clf.namespace + "/observability.openshift.io/clusterlogforwarders/" + clf.name + ".yaml",

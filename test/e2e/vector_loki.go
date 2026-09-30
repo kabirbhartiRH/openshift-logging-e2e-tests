@@ -2467,6 +2467,12 @@ var _ = g.Describe("[sig-openshift-logging] Logging NonPreRelease", func() {
 
 		// port=unknown - no data in BigQuery last 60 days
 		g.It("Author:kbharti-Medium-61435-Validate AlertManager support for User-workload monitoring[Serial][LokiOperator]", func() {
+
+			g.By("Enable User Workload Monitoring")
+			enableUserWorkloadMonitoringForLogging(oc)
+			defer deleteUserWorkloadManifests(oc)
+			waitForUserWorkloadMonitoringPodsReady(oc)
+
 			jsonLogFile := filepath.Join(loggingBaseDir, "generatelog", "container_json_log_template.json")
 			oc.SetupProject()
 			appProj := oc.Namespace()
@@ -2519,10 +2525,6 @@ var _ = g.Describe("[sig-openshift-logging] Logging NonPreRelease", func() {
 			defer clf.delete(oc)
 			clf.create(oc, "LOKISTACK_NAME="+ls.name, "LOKISTACK_NAMESPACE="+ls.namespace)
 
-			g.By("Enable User Workload Monitoring")
-			enableUserWorkloadMonitoringForLogging(oc)
-			defer deleteUserWorkloadManifests(oc)
-
 			g.By("Create Loki Alert and recording rules")
 			alertingTemplate := filepath.Join(loggingBaseDir, "loki-log-alerts", "loki-app-alerting-rule-template.yaml")
 			alertRule := resource{"alertingrule", "my-app-workload-alert", appProj}
@@ -2572,7 +2574,7 @@ var _ = g.Describe("[sig-openshift-logging] Logging NonPreRelease", func() {
 			o.Expect(err).NotTo(o.HaveOccurred())
 			bearerToken := getSAToken(oc, "default", appProj)
 			//token := getSAToken(oc, "prometheus-k8s", "openshift-monitoring")
-			queryAlertManagerForActiveAlerts(oc, bearerToken, true, "MyAppLogVolumeIsHigh", 5)
+			queryAlertManagerForActiveAlerts(oc, bearerToken, true, "MyAppLogVolumeIsHigh", 6)
 		})
 
 	})
