@@ -371,7 +371,7 @@ spec:
 
 		// port=unknown - no data in BigQuery last 60 days
 		g.It("Author:qitang-ConnectedOnly-High-76729-LokiStack 1x.pico Support[Serial][LokiOperator]", func() {
-			if !validateInfraAndResourcesForLoki(oc, "18Gi", "8") {
+			if !validateInfraAndResourcesForLoki(oc, "18Gi", "9") {
 				g.Skip("Skip this case for the cluster does't have enough resources")
 			}
 			objectStorage := getStorageType(oc)
@@ -408,14 +408,14 @@ spec:
 				if component == "gateway" {
 					component = "lokistack-gateway"
 				}
-				replicaCount, err := getPodNames(oc, ls.namespace, "app.kubernetes.io/component="+component)
+				replicaCount, err := getPodNames(oc, ls.namespace, "app.kubernetes.io/component="+component+",app.kubernetes.io/instance="+ls.name)
 				o.Expect(err).NotTo(o.HaveOccurred())
 				o.Expect(len(replicaCount) == 2).Should(o.BeTrue())
 			}
-			replicacount, err := getPodNames(oc, ls.namespace, "app.kubernetes.io/component=compactor")
+			replicacount, err := getPodNames(oc, ls.namespace, "app.kubernetes.io/component=compactor,app.kubernetes.io/instance="+ls.name)
 			o.Expect(err).NotTo(o.HaveOccurred())
 			o.Expect(len(replicacount) == 1).Should(o.BeTrue())
-			ingesterReplicaCount, err := getPodNames(oc, ls.namespace, "app.kubernetes.io/component=ingester")
+			ingesterReplicaCount, err := getPodNames(oc, ls.namespace, "app.kubernetes.io/component=ingester,app.kubernetes.io/instance="+ls.name)
 			o.Expect(err).NotTo(o.HaveOccurred())
 			o.Expect(len(ingesterReplicaCount) == 3).Should(o.BeTrue())
 

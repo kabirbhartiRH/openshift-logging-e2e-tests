@@ -1452,6 +1452,14 @@ func enableUserWorkloadMonitoringForLogging(oc *exutil.CLI) {
 	o.Expect(err).NotTo(o.HaveOccurred())
 }
 
+func waitForUserWorkloadMonitoringPodsReady(oc *exutil.CLI) {
+	uwmNS := "openshift-user-workload-monitoring"
+	WaitForDeploymentPodsToBeReady(oc, uwmNS, "prometheus-operator")
+	for _, ss := range []string{"alertmanager-user-workload", "prometheus-user-workload", "thanos-ruler-user-workload"} {
+		waitForStatefulsetReady(oc, uwmNS, ss)
+	}
+}
+
 func deleteUserWorkloadManifests(oc *exutil.CLI) {
 	clusterMonitoringConfig := resource{"configmap", "cluster-monitoring-config", "openshift-monitoring"}
 	clusterMonitoringConfig.clear(oc)
