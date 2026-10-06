@@ -62,6 +62,9 @@ func main() {
 		if err := compat_otp.InitTest(false); err != nil {
 			panic(err)
 		}
+		// oc is a kubectl superset and is always present in the test runner container;
+		// InitTest hardcodes KubectlPath="kubectl" which is not available here.
+		framework.TestContext.KubectlPath = "oc"
 		// Set testsStarted = true to allow OTP functions like oc.Run() to work
 		// WithCleanup sets this flag and it remains true for all subsequent tests
 		util.WithCleanup(func() {
