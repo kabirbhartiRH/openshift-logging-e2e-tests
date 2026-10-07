@@ -1281,7 +1281,9 @@ var _ = g.Describe("[sig-openshift-logging] Logging NonPreRelease", func() {
 
 			g.By("Fetch and set the Grafana Loki credentials")
 			lokiUsername, lokiPassword, err := getExtLokiSecret()
-			o.Expect(err).NotTo(o.HaveOccurred())
+			if err != nil {
+				g.Skip("Skipping: " + err.Error())
+			}
 			lokiURL := "https://logs-prod3.grafana.net"
 
 			g.By("Create project for app logs and deploy the log generator app")
@@ -1342,7 +1344,9 @@ max_size = 268435488`,
 
 			g.By("Fetch and set the Grafana Loki credentials")
 			lokiUsername, lokiPassword, err := getExtLokiSecret()
-			o.Expect(err).NotTo(o.HaveOccurred())
+			if err != nil {
+				g.Skip("Skipping: " + err.Error())
+			}
 			lokiURL := "https://logs-prod3.grafana.net"
 
 			g.By("Create project for app logs and deploy the log generator app")
@@ -1402,7 +1406,9 @@ max_size = 268435488`,
 
 			g.By("Fetch and set the Grafana Loki credentials")
 			lokiUsername, lokiPassword, err := getExtLokiSecret()
-			o.Expect(err).NotTo(o.HaveOccurred())
+			if err != nil {
+				g.Skip("Skipping: " + err.Error())
+			}
 			lokiURL := "https://logs-prod3.grafana.net"
 
 			g.By("Create project for app logs and deploy the log generator app")
@@ -4666,13 +4672,11 @@ log_attributes:
 		err = yaml.Unmarshal(lokiStackConf, &runtimeConfig)
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		fmt.Println("real config")
-		fmt.Print(runtimeConfig.Overrides.Application.OtlpConfig)
-		fmt.Println("static config")
-		fmt.Print(customOtlpconfigForApp)
+		e2e.Logf("real config: %v", runtimeConfig.Overrides.Application.OtlpConfig)
+		e2e.Logf("static config: %s", customOtlpconfigForApp)
 
 		if reflect.DeepEqual(runtimeConfig.Overrides.Application.OtlpConfig, staticAppOtlpConfig) {
-			fmt.Println("Validated expected custom OTLP configuration for tenant: application")
+			e2e.Logf("Validated expected custom OTLP configuration for tenant: application")
 		} else {
 			e2e.Failf("Incorrect custom OTLP configuration found for tenant: application. Failing case..")
 		}
@@ -4704,7 +4708,7 @@ log_attributes:
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		if reflect.DeepEqual(runtimeConfig.Overrides.Infrastructure.OtlpConfig, staticInfraOtlpConfig) {
-			fmt.Println("Validated expected custom OTLP configuration for tenant: infrastructure")
+			e2e.Logf("Validated expected custom OTLP configuration for tenant: infrastructure")
 		} else {
 			e2e.Failf("Incorrect custom OTLP configuration found for tenant: infrastructure. Failing case..")
 		}
@@ -4733,7 +4737,7 @@ resource_attributes:
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		if reflect.DeepEqual(runtimeConfig.Overrides.Audit.OtlpConfig, staticAuditOtlpConfig) {
-			fmt.Println("Validated expected custom OTLP configuration for tenant: audit")
+			e2e.Logf("Validated expected custom OTLP configuration for tenant: audit")
 		} else {
 			e2e.Failf("Incorrect custom OTLP configuration found for tenant: audit. Failing case..")
 		}
