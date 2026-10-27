@@ -89,8 +89,8 @@ var _ = g.Describe("[sig-openshift-logging] Logging NonPreRelease vector-loki Up
 	// author qitang@redhat.com
 	// port=unknown - no data in BigQuery last 60 days
 	g.It("Author:qitang-Longduration-Critical-53407-Upgrade with Vector as collector - minor version.[Serial][Slow][CLO][LokiOperator]", func() {
-		g.Skip("skip the case for logging 6.6 is not released")
-		var targetchannel = "stable-6.6"
+
+		var targetchannel = targetChannel
 		g.By(fmt.Sprintf("Subscribe operators to %s channel", targetchannel))
 		source := CatalogSourceObjects{
 			Channel:         targetchannel,
@@ -99,20 +99,22 @@ var _ = g.Describe("[sig-openshift-logging] Logging NonPreRelease vector-loki Up
 		}
 		subTemplate := filepath.Join(loggingBaseDir, "subscription", "sub-template.yaml")
 		preCLO := SubscriptionObjects{
-			OperatorName:  "cluster-logging-operator",
-			Namespace:     cloNS,
-			PackageName:   "cluster-logging",
-			Subscription:  subTemplate,
-			OperatorGroup: filepath.Join(loggingBaseDir, "subscription", "allnamespace-og.yaml"),
-			CatalogSource: source,
+			OperatorName:       "cluster-logging-operator",
+			Namespace:          cloNS,
+			PackageName:        "cluster-logging",
+			Subscription:       subTemplate,
+			OperatorGroup:      filepath.Join(loggingBaseDir, "subscription", "allnamespace-og.yaml"),
+			CatalogSource:      source,
+			SkipCaseWhenFailed: true,
 		}
 		preLO := SubscriptionObjects{
-			OperatorName:  "loki-operator-controller-manager",
-			Namespace:     loNS,
-			PackageName:   "loki-operator",
-			Subscription:  subTemplate,
-			OperatorGroup: filepath.Join(loggingBaseDir, "subscription", "allnamespace-og.yaml"),
-			CatalogSource: source,
+			OperatorName:       "loki-operator-controller-manager",
+			Namespace:          loNS,
+			PackageName:        "loki-operator",
+			Subscription:       subTemplate,
+			OperatorGroup:      filepath.Join(loggingBaseDir, "subscription", "allnamespace-og.yaml"),
+			CatalogSource:      source,
+			SkipCaseWhenFailed: true,
 		}
 		defer preCLO.uninstallOperator(oc)
 		preCLO.SubscribeOperator(oc)
@@ -199,6 +201,8 @@ var _ = g.Describe("[sig-openshift-logging] Logging NonPreRelease vector-loki Up
 
 		if upgraded {
 			g.By("waiting for the Loki and Vector pods to be ready after upgrade")
+			time.Sleep(200 * time.Second) // Loki controller manager may take some time (180s) to be ready/acquire lease
+
 			ls.waitForLokiStackToBeReady(oc)
 			clf.waitForCollectorPodsReady(oc)
 			WaitForDaemonsetPodsToBeReady(oc, lfme.namespace, "logfilesmetricexporter")
@@ -240,25 +244,29 @@ var _ = g.Describe("[sig-openshift-logging] Logging NonPreRelease vector-loki Up
 	// author: qitang@redhat.com
 	// port=unknown - no data in BigQuery last 60 days
 	g.It("Author:qitang-Longduration-Critical-53404-Upgrade with Vector as collector - major version LokiStack [Serial][Slow][CLO][LokiOperator]", func() {
-		// for 6.6, test upgrade from 6.5 to 6.6
-		preSource := CatalogSourceObjects{"stable-6.5", "redhat-operators", "openshift-marketplace"}
+		if upgradeFromChannel == "" {
+			g.Skip("LOGGING_UPGRADE_FROM_VERSION env var is not set, skipping operator deployment")
+		}
+		preSource := CatalogSourceObjects{upgradeFromChannel, "redhat-operators", "openshift-marketplace"}
 		g.By(fmt.Sprintf("Subscribe operators to %s channel", preSource.Channel))
 		subTemplate := filepath.Join(loggingBaseDir, "subscription", "sub-template.yaml")
 		preCLO := SubscriptionObjects{
-			OperatorName:  "cluster-logging-operator",
-			Namespace:     cloNS,
-			PackageName:   "cluster-logging",
-			Subscription:  subTemplate,
-			OperatorGroup: filepath.Join(loggingBaseDir, "subscription", "allnamespace-og.yaml"),
-			CatalogSource: preSource,
+			OperatorName:       "cluster-logging-operator",
+			Namespace:          cloNS,
+			PackageName:        "cluster-logging",
+			Subscription:       subTemplate,
+			OperatorGroup:      filepath.Join(loggingBaseDir, "subscription", "allnamespace-og.yaml"),
+			CatalogSource:      preSource,
+			SkipCaseWhenFailed: true,
 		}
 		preLO := SubscriptionObjects{
-			OperatorName:  "loki-operator-controller-manager",
-			Namespace:     loNS,
-			PackageName:   "loki-operator",
-			Subscription:  subTemplate,
-			OperatorGroup: filepath.Join(loggingBaseDir, "subscription", "allnamespace-og.yaml"),
-			CatalogSource: preSource,
+			OperatorName:       "loki-operator-controller-manager",
+			Namespace:          loNS,
+			PackageName:        "loki-operator",
+			Subscription:       subTemplate,
+			OperatorGroup:      filepath.Join(loggingBaseDir, "subscription", "allnamespace-og.yaml"),
+			CatalogSource:      preSource,
+			SkipCaseWhenFailed: true,
 		}
 		defer preCLO.uninstallOperator(oc)
 		preCLO.SubscribeOperator(oc)
@@ -321,11 +329,14 @@ var _ = g.Describe("[sig-openshift-logging] Logging NonPreRelease vector-loki Up
 		clDashboard := resource{"configmap", "grafana-dashboard-cluster-logging", "openshift-config-managed"}
 		clDashboard.WaitForResourceToAppear(oc)
 
+		if targetChannel == "" {
+			g.Skip("LOGGING_TEST_VERSION env var is not set, skipping operator deployment")
+		}
 		version := "6.6"
-		g.By("upgrade CLO&LO to stable-6.6")
-		err = oc.AsAdmin().WithoutNamespace().Run("patch").Args("-n", preCLO.Namespace, "sub/"+preCLO.PackageName, "-p", "{\"spec\": {\"channel\": \"stable-6.6\", \"source\": \"cluster-logging-operator-registry\", \"sourceNamespace\": \"openshift-marketplace\"}}", "--type=merge").Execute()
+		g.By(fmt.Sprintf("upgrade CLO&LO to %s", targetChannel))
+		err = oc.AsAdmin().WithoutNamespace().Run("patch").Args("-n", preCLO.Namespace, "sub/"+preCLO.PackageName, "-p", fmt.Sprintf("{\"spec\": {\"channel\": \"%s\", \"source\": \"cluster-logging-operator-registry\", \"sourceNamespace\": \"openshift-marketplace\"}}", targetChannel), "--type=merge").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
-		err = oc.AsAdmin().WithoutNamespace().Run("patch").Args("-n", preLO.Namespace, "sub/"+preLO.PackageName, "-p", "{\"spec\": {\"channel\": \"stable-6.6\", \"source\": \"loki-operator-registry\", \"sourceNamespace\": \"openshift-marketplace\"}}", "--type=merge").Execute()
+		err = oc.AsAdmin().WithoutNamespace().Run("patch").Args("-n", preLO.Namespace, "sub/"+preLO.PackageName, "-p", fmt.Sprintf("{\"spec\": {\"channel\": \"%s\", \"source\": \"loki-operator-registry\", \"sourceNamespace\": \"openshift-marketplace\"}}", targetChannel), "--type=merge").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		checkResource(oc, true, false, version, []string{"sub", preCLO.PackageName, "-n", preCLO.Namespace, "-ojsonpath={.status.currentCSV}"})
@@ -339,6 +350,8 @@ var _ = g.Describe("[sig-openshift-logging] Logging NonPreRelease vector-loki Up
 		resource{"csv", loCurrentCSV, preLO.Namespace}.WaitForResourceToAppear(oc)
 		checkResource(oc, true, true, "Succeeded", []string{"csv", loCurrentCSV, "-n", preLO.Namespace, "-ojsonpath={.status.phase}"})
 		WaitForDeploymentPodsToBeReady(oc, preLO.Namespace, preLO.OperatorName)
+
+		time.Sleep(200 * time.Second) // Loki controller manager may take some time (180s) to be ready/acquire lease
 
 		ls.waitForLokiStackToBeReady(oc)
 		clf.waitForCollectorPodsReady(oc)
@@ -449,7 +462,7 @@ var _ = g.Describe("[sig-openshift-logging] Logging NonPreRelease OperatorDeploy
 
 		g.By("Delete cluster-logging operator if exist")
 		sourceQE := CatalogSourceObjects{
-			Channel:         "stable-6.6",
+			Channel:         targetChannel,
 			SourceName:      "cluster-logging-operator-registry",
 			SourceNamespace: "openshift-marketplace",
 		}
