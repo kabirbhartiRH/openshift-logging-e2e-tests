@@ -39,19 +39,19 @@ import (
 	e2eoutput "k8s.io/kubernetes/test/e2e/framework/pod/output"
 )
 
-var targetChannel = func() string {
-	if v := os.Getenv("LOGGING_TEST_VERSION"); v != "" {
-		return "stable-" + v
+func channelFromEnv(envName string) string {
+	v := os.Getenv(envName)
+	if v == "" {
+		return ""
 	}
-	return ""
-}()
+	if matched, _ := regexp.MatchString(`^\d+\.\d+$`, v); !matched {
+		panic(fmt.Sprintf("env var %s=%q: expected format like \"6.7\"", envName, v))
+	}
+	return "stable-" + v
+}
 
-var upgradeFromChannel = func() string {
-	if v := os.Getenv("LOGGING_UPGRADE_FROM_VERSION"); v != "" {
-		return "stable-" + v
-	}
-	return ""
-}()
+var targetChannel = channelFromEnv("LOGGING_TEST_VERSION")
+var upgradeFromChannel = channelFromEnv("LOGGING_UPGRADE_FROM_VERSION")
 
 // SubscriptionObjects objects are used to create operators via OLM
 type SubscriptionObjects struct {
@@ -191,7 +191,7 @@ func (so *SubscriptionObjects) setCatalogSourceObjects(oc *exutil.CLI) {
 	// set channel
 	if so.CatalogSource.Channel == "" {
 		if targetChannel == "" {
-			g.Skip("LOGGING_TEST_VERSION env var is not set, skipping operator deployment")
+			g.Fail("LOGGING_TEST_VERSION env var must be set before running this test suite")
 		}
 		so.CatalogSource.Channel = targetChannel
 	}
